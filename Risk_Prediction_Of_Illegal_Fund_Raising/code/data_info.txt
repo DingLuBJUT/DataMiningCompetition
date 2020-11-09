@@ -1,0 +1,63 @@
+1、企业其他信息中存在空值NaN(裁判文书数量,注册商标数量,专利数量)
+2、企业新闻舆情信息中每一个企业的报道新闻可能存在多篇，每一篇正负面性不一定相同、日期不同
+3、企业的变更信息中存在重复数据包括(时间完全重复)，要进行去重操作，另外，存在变更时间不一样，但是变更前与变更后完成一样的情况
+   还有不同企业变更前与变更后存在一样的情况
+
+
+注意：不同数据的时间日期格式不一致
+
+
+
+**Feature Engineer V1**
+base_info:
+    oplocdistrict:行政区划代码-LabelEncoder
+    industryphy:行业类别代码-LabelEncoder
+    industryco:行业细类代码-LabelEncoder
+    dom:经营地址-不同值个数过多，暂时直接删除(脱敏特征)
+    opscope:经营范围-包括中文语言特征，暂时直接删除
+    enttype:企业类型-LabelEncoder
+    enttypeitem:企业类型小类-LabelEncoder
+    opfrom:经营期限起-暂时直接删除
+    opto:经营期限止-暂时直接删除
+
+    state:状态-LabelEncoder
+    orgid:机构标识-LabelEncoder
+    jobid:职位标识-LabelEncoder
+    adbusign:是否广告经营-LabelEncoder
+    townsign:是否城镇-LabelEncoder
+    regtype:主题登记类型-LabelEncoder
+
+    empnum:从业人数-Number
+    compform:组织形式-LabelEncoder
+
+    opform:经营方式-LabelEncoder
+    venind:风险行业-LabelEncoder
+
+    enttypeminu:企业类型细类-LabelEncoder
+    oploc:经营场所-不同值个数过多，暂时直接删除(脱敏特征)
+    regcap:注册资本（金）-Number
+    reccap:实缴资本-Number
+    enttypegb:企业（机构）类型-LabelEncoder
+
+annual_report_info:
+    ANCHEYEAR:年度-LabelEncoder
+    STATE:状态-LabelEncoder
+    FUNDAM:资金数额-Number
+    EMPNUM:从业人数-Number
+    EMPNUMSIGN:从业人数是否公示-LabelEncoder
+    BUSSTNAME:经营状态名称-LabelEncoder
+
+
+    COLGRANUM:其中高校毕业生人数经营者-Number
+    RETSOLNUM:其中退役士兵人数经营者-Number
+    DISPERNUM:其中残疾人人数经营者-Number
+    UNENUM:其中下岗失业人数经营者-Number
+    COLEMPLNUM:其中高校毕业生人数雇员-Number
+    RETEMPLNUM:其中退役士兵人数雇员-Number
+    DISEMPLNUM:其中残疾人人数雇员-Number
+    UNEEMPLNUM:其中下岗失业人数雇员-Number
+
+    WEBSITSIGN:是否有网站标志-LabelEncoder
+    FORINVESTSIGN:是否有对外投资企业标志-LabelEncoder
+    STOCKTRANSIGN:有限责任公司本年度是否发生股东股权转让标志-LabelEncoder
+    PUBSTATE:公示状态-LabelEncoder
