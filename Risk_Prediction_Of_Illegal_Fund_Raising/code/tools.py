@@ -15,7 +15,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from bubbly.bubbly import bubbleplot
 from plotly.offline import iplot
-from  sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+import shap
 
 
 
@@ -111,6 +113,7 @@ def fill_nan(data_frame, column_name, fill_way):
         data_frame[column_name] = data_frame[column_name].fillna(median)
     return data_frame
 
+
 def predict_result(model, test_data, result_path):
     """
 
@@ -127,6 +130,7 @@ def predict_result(model, test_data, result_path):
     # result = result.groupby("id").agg('mean').reset_index()
     result.to_csv(result_path, index=False)
     return
+
 
 def get_balance_data(data_frame):
     """
@@ -146,6 +150,7 @@ def plot_hist(data_frame,feature_name,label_name):
     fg.map(plt.hist, feature_name)
     plt.show()
     return
+
 
 def plot_bubble(data_frame, x_name, y_name, z_name, color_name, size_name):
 
@@ -168,6 +173,7 @@ def plot_bubble(data_frame, x_name, y_name, z_name, color_name, size_name):
     plt.show()
     data_frame.drop(['id'], axis=1, inplace=True)
     return
+
 
 def plot_kde(data_frame, feature_name, label_name):
     fg = sns.FacetGrid(data_frame, hue=label_name, size=10)
@@ -194,18 +200,56 @@ def get_time_year(data_frame, column_name):
     return year
 
 
-def probed_data(data_frame, model):
+def predict_data(data_frame, model):
     label = data_frame['label']
     data_frame.drop(['label'], inplace=True, axis=1)
     prob = pd.Series(model.predict_proba(data_frame)[:, 1], name='prob')
-    data_frame = pd.concat([data_frame.reset_index(),label.reset_index(),prob.reset_index()],axis=1)
+    data_frame = pd.concat([data_frame.reset_index(), label.reset_index(), prob.reset_index()], axis=1)
+    pred = pd.Series([1 if prob > 0.5 else 0 for prob in data_frame['prob']], name='pred')
+    data_frame = pd.concat([data_frame, pred.reset_index()], axis=1)
     return data_frame
+
+
+def plot_confusion_matrix(data_frame):
+    ax = plt.subplot()
+
+    label = data_frame['label']
+    pred = data_frame['pred']
+    conf_matrix = confusion_matrix(label, pred)
+    print(conf_matrix)
+
+    neg_to_neg = conf_matrix[0, 0]
+    pos_to_neg = conf_matrix[0, 1]
+    neg_to_pos = conf_matrix[1, 0]
+    pos_to_pos = conf_matrix[1, 1]
+
+    pos_acc = pos_to_pos / (pos_to_pos + pos_to_neg)
+    neg_acc = neg_to_neg / (neg_to_neg + neg_to_pos)
+
+    print("neg acc is: %f" % (neg_acc))
+    print("pos acc is: %f" % (pos_acc))
+
+    sns.heatmap(conf_matrix, annot=True, ax=ax)
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True labels');
+    ax.set_title('Confusion Matrix')
+    ax.xaxis.set_ticklabels(['0', '1'])
+    ax.yaxis.set_ticklabels(['0', '1'])
+    plt.show()
+
+    return
+
+
+def plot_SHAP(tree_model, val_data):
+    values = shap.TreeExplainer(tree_model).shap_values(val_data)
+    shap.summary_plot(values, tree_model)
+    return
+
+
 
 def main():
     return
 
+
 if __name__ == '__main__':
     main()
-
-
-

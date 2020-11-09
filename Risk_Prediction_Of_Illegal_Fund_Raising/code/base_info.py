@@ -1,8 +1,4 @@
-
-from sklearn.preprocessing import LabelEncoder
-import datetime
-import pandas as pd
-
+# -*- coding:utf-8 -*-
 
 """
 reccap:实缴资本
@@ -82,7 +78,9 @@ enttypegb:企业（机构）类型
     
 """
 
-
+import datetime
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
 
 
 class BaseInfo:
@@ -123,7 +121,7 @@ class BaseInfo:
             'parnum',
             'compform',
             'opscope',
-            'id',
+            'id'
         ]
 
         if type == 'test':
@@ -161,11 +159,27 @@ class BaseInfo:
         self.data = pd.concat([value_data, null_data])
         return
 
-
-    def process_v1(self):
+    def feature_process_v1(self):
         for name in self.data_type.keys():
             if self.data_type.get(name) == 'category':
-                self.label_encoder(name,'category')
+                self.label_encoder(name, 'category')
+            elif self.data_type.get(name) == 'int64':
+                mean = self.data[self.data[name].isnull() == 0][name].mean()
+                self.fill_nan(name, mean, 'int64')
+            elif self.data_type.get(name) == 'time':
+                self.unify_time(name)
+                mode = self.data[name].mode()[0]
+                self.fill_nan(name, mode, 'int64')
+
+        self.data['diff_year'] = (self.data['opto'] - self.data['opfrom']).astype('int64')
+        self.drop_columns(self.useless_columns)
+        return self.data
+
+    def feature_process_v2(self):
+        for name in self.data_type.keys():
+            if self.data_type.get(name) == 'category':
+                self.fill_nan(name, '-1', 'category')
+                # self.label_encoder(name, 'category')
             elif self.data_type.get(name) == 'int64':
                 mean = self.data[self.data[name].isnull() == 0][name].mean()
                 self.fill_nan(name, mean, 'int64')
