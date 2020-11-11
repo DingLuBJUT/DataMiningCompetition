@@ -9,6 +9,10 @@ this file for tools with basic functions.
 # 2020/11/19,Junlu,Ding,create
 
 
+import datetime
+import pandas as pd
+from sklearn.preprocessing import LabelEncoder
+
 """
 
  positive_negtive:新闻正负面性
@@ -27,37 +31,64 @@ this file for tools with basic functions.
 
 """
 
-import datetime
-import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-
 class NewsInfo:
-    def __init__(self,data):
+    def __init__(self, data):
         self.data_type = {
-            'positive_negtive':'category'
+            'total_num': 'int64',
+            'middle_num': 'int64',
+            'neg_num': 'int64',
+            'pos_num': 'int64',
+            'max_date_time': 'category',
+            'min_date_time': 'category',
+            'distinct_count_date_time': 'int64'
+        }
+
+        self.fill_values = {
+            'total_num': -1,
+            'middle_num': -1,
+            'neg_num': -1,
+            'pos_num': -1,
+            'max_date_time': '-1',
+            'min_date_time': '-1',
+            'distinct_count_date_time': -1
         }
         self.data = data
         return
 
-    def label_encoder(self, name, column_type):
-        label_encode = LabelEncoder()
-        value_data = self.data[self.data[name].isnull() == 0]
-        null_data = self.data[self.data[name].isnull() != 0]
-        value_data[name] = label_encode.fit_transform(value_data[name])
-        self.data = pd.concat([null_data, value_data])
-        self.data[name] = self.data[name].astype(column_type)
+    def fill_nan(self, data_frame):
+        for name in self.fill_values.keys():
+            data_frame[name] = data_frame[name].fillna(self.fill_values[name])
+        return data_frame
+
+    @staticmethod
+    def drop_id(data_frame):
+        data_frame.drop(['id'], inplace=True, axis=1)
         return
+
+    def label_encoder(self):
+        label_encode = LabelEncoder()
+        max_date_time = self.data['max_date_time'].unique().tolist()
+        min_date_time = self.data['min_date_time'].unique().tolist()
+        label_encode = label_encode.fit(list(set(max_date_time + min_date_time)))
+        self.data['max_date_time'] = label_encode.transform(self.data['max_date_time'])
+        self.data['min_date_time'] = label_encode.transform(self.data['min_date_time'])
+        return
+
+    def convert_data_type(self, data_frame):
+        for name in self.data_type.keys():
+            data_frame[name] = data_frame[name].astype(self.data_type[name])
+        return data_frame
 
     def news_total_num(self):
         total_num_news = self.data.groupby(['id']).count().reset_index()
         total_num_news.drop(['positive_negtive'], axis=1, inplace=True)
-        total_num_news.columns = ['id','total_num']
-        return total_num_news[['id','total_num']]
+        total_num_news.columns = ['id', 'total_num']
+        return total_num_news[['id', 'total_num']]
 
     def news_category_num(self):
         category_num_news = self.data.groupby(['id', 'positive_negtive']).count().reset_index()
         category_num_news.columns = ['id','category','category_num']
-        category_num_news = category_num_news.reset_index(['id','category'])['category_num'].unstack()
+        category_num_news = category_num_news.set_index(['id','category'])['category_num'].unstack()
         category_num_news = category_num_news.fillna(0).reset_index()
         category_num_news.columns = ['id', 'middle_num', 'neg_num', 'pos_num']
         return category_num_news
@@ -73,11 +104,10 @@ class NewsInfo:
         max_date_time = self.data.groupby(['id'])[['public_date']].max().reset_index()
         max_date_time.columns = ['id', 'max_date_time']
         distinct_count_date_time = self.data.groupby(['id']).agg({'public_date': pd.Series.nunique}).reset_index()
-        distinct_count_date_time.columns = ['id','distinct_count_date_time']
+        distinct_count_date_time.columns = ['id', 'distinct_count_date_time']
         max_min_date_time = max_date_time.merge(min_date_time, on='id', how='inner')
         date_time_feature_news = max_min_date_time.merge(distinct_count_date_time, on='id', how='inner')
         return date_time_feature_news
-
 
     def feature_process_v1(self):
         total_num_news = self.news_total_num()
@@ -85,6 +115,8 @@ class NewsInfo:
         date_time_feature_news = self.news_datetime_feature()
         self.data = total_num_news.merge(category_num_news, on='id', how='inner')
         self.data = self.data.merge(date_time_feature_news, on='id', how='inner')
+        self.label_encoder()
+        # self.convert_data_type()
         return self.data
 
 
