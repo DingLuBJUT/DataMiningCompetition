@@ -145,7 +145,7 @@ def get_balance_data(data_frame):
     return data_frame
 
 
-def plot_hist(data_frame,feature_name,label_name):
+def plot_hist(data_frame, feature_name, label_name):
     fg = sns.FacetGrid(data_frame, col=label_name)
     fg.map(plt.hist, feature_name)
     plt.show()
