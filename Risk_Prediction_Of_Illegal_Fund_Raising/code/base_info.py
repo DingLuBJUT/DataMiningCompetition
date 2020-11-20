@@ -121,7 +121,26 @@ class BaseInfo:
             'parnum',
             'compform',
             'opscope',
-            'id'
+
+            # 'id',
+            # 'orgid',
+            # 'industryco',
+            # 'dom',
+            # 'enttypegb',
+            # 'enttypeitem',
+            # 'opfrom',
+            # 'state',
+            # 'adbusign',
+            # 'jobid',
+            # 'enttypegb',
+            # 'regtype',
+            # 'empnum',
+            # 'venind',
+            # 'enttypeminu',
+            # 'oploc',
+            # 'enttype',
+            # 'oplocdistrict'
+
         ]
 
         if type == 'test':
@@ -178,8 +197,8 @@ class BaseInfo:
     def feature_process_v2(self):
         for name in self.data_type.keys():
             if self.data_type.get(name) == 'category':
-                self.fill_nan(name, '-1', 'category')
-                # self.label_encoder(name, 'category')
+                self.fill_nan(name, '-1', 'str')
+                self.label_encoder(name, 'category')
             elif self.data_type.get(name) == 'int64':
                 mean = self.data[self.data[name].isnull() == 0][name].mean()
                 self.fill_nan(name, mean, 'int64')

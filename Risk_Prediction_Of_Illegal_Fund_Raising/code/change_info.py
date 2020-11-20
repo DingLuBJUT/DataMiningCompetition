@@ -57,68 +57,73 @@ f000950527a6feb6ddaa8f26bf9f04a19cf81a32733e7347,137.0,2cae8fd090601edc,696844db
 class ChangeInfo:
     def __init__(self, data):
         self.data = data
+
+        self.data['bgrq'] = self.data['bgrq'].apply(lambda x: str(x)[0:8])
+
         self.data_type = {
             'total_change_num': 'int64',
-            'diff_bgxmdm_num': 'int64',
-            'bgq_num': 'int64',
-            'bgh_num': 'int64',
-            'bgxmdm_bgq_num': 'int64',
-            'bgxmdm_bgh_num': 'int64',
-            'mean_bgq_as_bgh_num': 'int64',
-            'mean_bgh_as_bgq_num': 'int64',
-            'change_max_num_day': 'int64',
-            'change_min_num_day': 'int64',
-            'identification_max_num_day': 'int64',
-            'identification_min_num_day': 'int64',
-            'min_date': 'category',
-            'max_date': 'category',
-            'unique_date_num': 'int64'
+            'diff_bgxmdm_num': 'int64'
+            # 'bgq_num': 'int64',
+            # 'bgh_num': 'int64',
+            # 'bgxmdm_bgq_num': 'int64',
+            # 'bgxmdm_bgh_num': 'int64',
+            # 'mean_bgq_as_bgh_num': 'int64',
+            # 'mean_bgh_as_bgq_num': 'int64',
+            # 'change_max_num_day': 'int64',
+            # 'change_min_num_day': 'int64',
+            # 'identification_max_num_day': 'int64',
+            # 'identification_min_num_day': 'int64'
         }
-        self.drop_columns = [
-                                'bgxmdm',
-                                'bgh',
-                                'bgq',
-                                'bgrq'
-                            ]
+        self.useless_columns = [
+            'bgxmdm',
+            'bgh',
+            'bgq',
+            'bgrq',
+
+            'bgq_num',
+            'bgh_num',
+            'bgxmdm_bgq_num',
+            'bgxmdm_bgh_num',
+            'mean_bgq_as_bgh_num',
+            'mean_bgh_as_bgq_num',
+            'change_max_num_day',
+            'change_min_num_day',
+            'identification_max_num_day',
+            'identification_min_num_day'
+        ]
 
         self.distinct_features = [
-                                      'id',
-                                      'total_change_num',
-                                      'diff_bgxmdm_num',
-                                      'bgq_num',
-                                      'bgh_num',
-                                      'bgxmdm_bgq_num',
-                                      'bgxmdm_bgh_num',
-                                      'mean_bgq_as_bgh_num',
-                                      'mean_bgh_as_bgq_num',
-                                      'change_max_num_day',
-                                      'change_min_num_day',
-                                      'identification_max_num_day',
-                                      'identification_min_num_day',
-                                      'min_date',
-                                      'max_date',
-                                      'unique_date_num'
+            'id',
+            'total_change_num',
+            'diff_bgxmdm_num'
+            # 'bgq_num',
+            # 'bgh_num',
+            # 'bgxmdm_bgq_num',
+            # 'bgxmdm_bgh_num',
+            # 'mean_bgq_as_bgh_num',
+            # 'mean_bgh_as_bgq_num',
+            # 'change_max_num_day',
+            # 'change_min_num_day',
+            # 'identification_max_num_day',
+            # 'identification_min_num_day'
 
-                                 ]
+        ]
 
         self.fill_values = {
             'total_change_num': -1,
-            'diff_bgxmdm_num': -1,
-            'bgq_num': -1,
-            'bgh_num': -1,
-            'bgxmdm_bgq_num': -1,
-            'bgxmdm_bgh_num': -1,
-            'mean_bgq_as_bgh_num': -1,
-            'mean_bgh_as_bgq_num': -1,
-            'change_max_num_day': -1,
-            'change_min_num_day': -1,
-            'identification_max_num_day': -1,
-            'identification_min_num_day': -1,
-            'min_date': '-1',
-            'max_date': '-1',
-            'unique_date_num': -1
+            'diff_bgxmdm_num': -1
+            # 'bgq_num': -1,
+            # 'bgh_num': -1,
+            # 'bgxmdm_bgq_num': -1,
+            # 'bgxmdm_bgh_num': -1,
+            # 'mean_bgq_as_bgh_num': -1,
+            # 'mean_bgh_as_bgq_num': -1,
+            # 'change_max_num_day': -1,
+            # 'change_min_num_day': -1,
+            # 'identification_max_num_day': -1,
+            # 'identification_min_num_day': -1
+
         }
-        self.data['bgrq'] = self.data['bgrq'].apply(lambda x: str(x)[0:8])
         return
 
     def convert_data_type(self, data_frame):
@@ -170,10 +175,6 @@ class ChangeInfo:
         self.data = self.data.merge(min_trans_data, on='id', how='inner')
         return
 
-    # def label_encoder(self):
-    #     label_encode = LabelEncoder()
-    #     self.data['bgxmdm'] = label_encode.fit_transform(self.data['bgxmdm'])
-    #     return
 
     def total_change_num(self):
         """
@@ -300,7 +301,6 @@ class ChangeInfo:
                 self.data[name] = label_encode.transform(self.data[name])
         return
 
-
     def min_time(self):
         trans_data = self.data[['id', 'bgrq']].groupby(['id']).min().reset_index()
         trans_data.columns = ['id', 'min_date']
@@ -319,8 +319,6 @@ class ChangeInfo:
         self.data = self.data.merge(trans_data, on='id', how='inner')
         return
 
-
-
     def feature_process_v1(self):
         # 行去重
         self.data.drop_duplicates(subset=['id', 'bgxmdm', 'bgq', 'bgh', 'bgrq'], inplace=True)
@@ -335,12 +333,7 @@ class ChangeInfo:
         self.after_as_before()
         self.change_num_day()
         self.identification_num_day()
-        self.min_time()
-        self.max_time()
-        self.unique_time_num()
-        self.label_encoder()
-        self.convert_data_type(self.data)
-        self.data.drop(self.drop_columns, axis=1, inplace=True)
+        self.data.drop(self.useless_columns, axis=1, inplace=True)
         self.data.drop_duplicates(subset=self.distinct_features, inplace=True)
         return self.data
 

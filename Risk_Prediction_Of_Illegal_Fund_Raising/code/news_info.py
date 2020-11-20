@@ -18,8 +18,8 @@ from sklearn.preprocessing import LabelEncoder
  positive_negtive:新闻正负面性
     积极、中立、消极
  public_date:发布日期
- 
- 
+
+
  1、发布新闻总个数(没有用-1填充)
  2、消极新闻个数(没有用0填充)
  3、中立新闻个数(没有用0填充)
@@ -30,6 +30,7 @@ from sklearn.preprocessing import LabelEncoder
  9、发布新闻总个数/不同年份个数
 
 """
+
 
 class NewsInfo:
     def __init__(self, data):
@@ -44,14 +45,19 @@ class NewsInfo:
         }
 
         self.fill_values = {
-            'total_num': -1,
-            'middle_num': -1,
-            'neg_num': -1,
-            'pos_num': -1,
+            'total_num': -1.0,
+            'middle_num': -1.0,
+            'neg_num': -1.0,
+            'pos_num': -1.0,
             'max_date_time': '-1',
             'min_date_time': '-1',
-            'distinct_count_date_time': -1
+            'distinct_count_date_time': -1.0
         }
+
+        self.useless_column = [
+            'id'
+        ]
+
         self.data = data
         return
 
@@ -60,9 +66,8 @@ class NewsInfo:
             data_frame[name] = data_frame[name].fillna(self.fill_values[name])
         return data_frame
 
-    @staticmethod
-    def drop_id(data_frame):
-        data_frame.drop(['id'], inplace=True, axis=1)
+    def drop_columns(self):
+        self.data.drop(self.useless_column, inplace=True, axis=1)
         return
 
     def label_encoder(self):
@@ -87,8 +92,8 @@ class NewsInfo:
 
     def news_category_num(self):
         category_num_news = self.data.groupby(['id', 'positive_negtive']).count().reset_index()
-        category_num_news.columns = ['id','category','category_num']
-        category_num_news = category_num_news.set_index(['id','category'])['category_num'].unstack()
+        category_num_news.columns = ['id', 'category', 'category_num']
+        category_num_news = category_num_news.set_index(['id', 'category'])['category_num'].unstack()
         category_num_news = category_num_news.fillna(0).reset_index()
         category_num_news.columns = ['id', 'middle_num', 'neg_num', 'pos_num']
         return category_num_news
@@ -100,7 +105,7 @@ class NewsInfo:
             lambda x: x if x is None else datetime.datetime.strptime(x, '%Y-%m-%d'))
         self.data['public_date'] = self.data['public_date'].apply(lambda x: x.year)
         min_date_time = self.data.groupby(['id'])[['public_date']].min().reset_index()
-        min_date_time.columns = ['id','min_date_time']
+        min_date_time.columns = ['id', 'min_date_time']
         max_date_time = self.data.groupby(['id'])[['public_date']].max().reset_index()
         max_date_time.columns = ['id', 'max_date_time']
         distinct_count_date_time = self.data.groupby(['id']).agg({'public_date': pd.Series.nunique}).reset_index()
@@ -115,10 +120,6 @@ class NewsInfo:
         date_time_feature_news = self.news_datetime_feature()
         self.data = total_num_news.merge(category_num_news, on='id', how='inner')
         self.data = self.data.merge(date_time_feature_news, on='id', how='inner')
+        self.drop_columns()
         self.label_encoder()
-        # self.convert_data_type()
         return self.data
-
-
-
-

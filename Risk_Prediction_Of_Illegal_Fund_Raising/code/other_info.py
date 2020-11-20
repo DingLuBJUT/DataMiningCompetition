@@ -13,16 +13,23 @@ class OtherInfo:
     def __init__(self, data):
         self.data_type = {
             'brand_num': 'int64',
-            'judgment': 'int64'
+            'legal_judgment_num': 'int64'
         }
-        self.drop_columns = [
+
+        self.useless_columns = [
             'patent_num'
         ]
 
         self.fill_values = {
             'brand_num': 0,
-            'judgment': 0
+            'legal_judgment_num': 0
         }
+
+        self.distinct_features = [
+            'id',
+            'brand_num',
+            'legal_judgment_num'
+        ]
 
         self.data = data
         return
@@ -38,6 +45,8 @@ class OtherInfo:
         return data_frame
 
     def feature_process_v1(self):
-        self.data.drop(self.drop_columns, axis=1, inplace=True)
-        self.data = self.data.fillna(0)
+        self.data.drop(self.useless_columns, axis=1, inplace=True)
+        self.data = self.data.fillna(-1)
+        self.data.drop_duplicates(subset=self.distinct_features, inplace=True)
+        self.data.drop_duplicates(subset=['id'], inplace=True)
         return self.data
