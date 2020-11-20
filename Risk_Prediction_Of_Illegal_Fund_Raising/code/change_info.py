@@ -69,7 +69,10 @@ class ChangeInfo:
             'change_max_num_day': 'int64',
             'change_min_num_day': 'int64',
             'identification_max_num_day': 'int64',
-            'identification_min_num_day': 'int64'
+            'identification_min_num_day': 'int64',
+            'min_date': 'category',
+            'max_date': 'category',
+            'unique_date_num': 'int64'
         }
         self.drop_columns = [
                                 'bgxmdm',
@@ -91,7 +94,11 @@ class ChangeInfo:
                                       'change_max_num_day',
                                       'change_min_num_day',
                                       'identification_max_num_day',
-                                      'identification_min_num_day'
+                                      'identification_min_num_day',
+                                      'min_date',
+                                      'max_date',
+                                      'unique_date_num'
+
                                  ]
 
         self.fill_values = {
@@ -106,8 +113,12 @@ class ChangeInfo:
             'change_max_num_day': -1,
             'change_min_num_day': -1,
             'identification_max_num_day': -1,
-            'identification_min_num_day': -1
+            'identification_min_num_day': -1,
+            'min_date': '-1',
+            'max_date': '-1',
+            'unique_date_num': -1
         }
+        self.data['bgrq'] = self.data['bgrq'].apply(lambda x: str(x)[0:8])
         return
 
     def convert_data_type(self, data_frame):
@@ -280,6 +291,36 @@ class ChangeInfo:
         self.data = self.data.merge(trans_data, on='id', how='inner')
         return
 
+    def label_encoder(self):
+        label_encode = LabelEncoder()
+        for name in self.data_type.keys():
+            if self.data_type[name] == 'category':
+                element = self.data[name].unique().tolist()
+                label_encode = label_encode.fit(element)
+                self.data[name] = label_encode.transform(self.data[name])
+        return
+
+
+    def min_time(self):
+        trans_data = self.data[['id', 'bgrq']].groupby(['id']).min().reset_index()
+        trans_data.columns = ['id', 'min_date']
+        self.data = self.data.merge(trans_data, on='id', how='inner')
+        return
+
+    def max_time(self):
+        trans_data = self.data[['id', 'bgrq']].groupby(['id']).max().reset_index()
+        trans_data.columns = ['id', 'max_date']
+        self.data = self.data.merge(trans_data, on='id', how='inner')
+        return
+
+    def unique_time_num(self):
+        trans_data = self.data[['id', 'bgrq']].groupby(['id']).agg({'bgrq': pd.Series.nunique}).reset_index()
+        trans_data.columns = ['id', 'unique_date_num']
+        self.data = self.data.merge(trans_data, on='id', how='inner')
+        return
+
+
+
     def feature_process_v1(self):
         # 行去重
         self.data.drop_duplicates(subset=['id', 'bgxmdm', 'bgq', 'bgh', 'bgrq'], inplace=True)
@@ -294,6 +335,10 @@ class ChangeInfo:
         self.after_as_before()
         self.change_num_day()
         self.identification_num_day()
+        self.min_time()
+        self.max_time()
+        self.unique_time_num()
+        self.label_encoder()
         self.convert_data_type(self.data)
         self.data.drop(self.drop_columns, axis=1, inplace=True)
         self.data.drop_duplicates(subset=self.distinct_features, inplace=True)
