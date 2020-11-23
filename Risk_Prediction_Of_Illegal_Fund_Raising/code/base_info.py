@@ -78,14 +78,20 @@ enttypegb:企业（机构）类型
     
 """
 
+
+import re
 import datetime
 import pandas as pd
+from itertools import chain
+from collections import Counter
 from sklearn.preprocessing import LabelEncoder
 
 
 class BaseInfo:
-    def __init__(self, data, type='train'):
+    def __init__(self, data, ent_prise_info, type='train'):
         self.data = data
+        self.ent_prise_info = ent_prise_info
+
         self.data_type = {
             'opfrom': 'time',
             'opto': 'time',
@@ -109,6 +115,13 @@ class BaseInfo:
             'industryphy': 'category',
             'enttypegb': 'category',
             'opform': 'category'
+            # 'address_index': 'category'
+            # 'id_index': 'category',
+            # 'scope_num': 'int64',
+            # 'is_exist_pos_kw': 'category',
+            # 'special_kw_num': 'int64',
+            # 'diff_kw_num': 'int64'
+
         }
         self.useless_columns = [
             'ptbusscope',
@@ -120,7 +133,12 @@ class BaseInfo:
             'exenum',
             'parnum',
             'compform',
-            'opscope',
+            'opscope'
+
+            # 'scope_num',
+            # 'diff_kw_num',
+            # 'is_exist_pos_kw',
+            # 'special_kw_num',
 
             # 'id',
             # 'orgid',
@@ -178,6 +196,61 @@ class BaseInfo:
         self.data = pd.concat([value_data, null_data])
         return
 
+    # def split_scope(self, scopes):
+    #     scopes = re.sub(u"\\（.*?）|\\{.*?}|\\[.*?]|\\【.*?】", "", scopes)
+    #     scopes = re.split(r'[；; ;、, ,，。（）()\s]\s*', scopes)
+    #     return scopes
+
+    # def get_pos_corpus(self):
+    #     trans_data = self.data[['id', 'opscope']].merge(self.ent_prise_info, on=['id'], how='inner')
+    #     pos_scopes = trans_data[trans_data['label'] == 1]['opscope'].tolist()
+    #     neg_scopes = trans_data[trans_data['label'] == 0]['opscope'].tolist()
+    #
+    #     pos_kws = []
+    #     for line in pos_scopes:
+    #         pos_kws.append(self.split_scope(line))
+    #     pos_kws_dict = Counter(list(chain(*pos_kws)))
+    #     pos_kws_dict = dict(sorted(pos_kws_dict.items(), key=lambda item: item[1], reverse=True))
+    #     pos_kws_dict.pop('')
+    #     pos_kws_dict.pop('***')
+    #     pos_kws_dict.pop('**')
+    #
+    #     pos_kws_dict.pop('#')
+    #     pos_kws_dict.pop('*******')
+    #     pos_kws_dict.pop('***除外')
+    #     pos_kws_dict.pop('2')
+    #     pos_kws_dict.pop('3')
+    #     pos_kws_dict.pop('4')
+    #
+    #     pos_kws = set(pos_kws_dict.keys())
+    #     self.pos_mode_kws = set(dict((k, v) for k, v in pos_kws_dict.items() if v > 0).keys())
+    #
+    #     neg_kws = []
+    #     for line in neg_scopes:
+    #         neg_kws.append(self.split_scope(line))
+    #     neg_kws = set(chain(*neg_kws))
+    #     self.difference_kws = pos_kws - neg_kws
+    #     return
+
+    # def intersection_size(self, scopes, type):
+    #     scopes = set(self.split_scope(scopes))
+    #     if type == "is_exist_pos_kw":
+    #         if len(self.difference_kws & scopes) > 0:
+    #             return 1
+    #         else:
+    #             return 0
+    #     else:
+    #         return len(self.pos_mode_kws & scopes)
+
+    # def op_scope(self):
+    #     self.get_pos_corpus()
+    #     self.data['scope_num'] = self.data['opscope'].apply(lambda x: len(self.split_scope(x)))
+    #     self.data['is_exist_pos_kw'] = self.data['opscope'].apply(
+    #         lambda x: self.intersection_size(x, "is_exist_pos_kw"))
+    #     self.data['special_kw_num'] = self.data['opscope'].apply(lambda x: self.intersection_size(x, "special_kw_num"))
+    #     self.data['diff_kw_num'] = self.data['scope_num'] - self.data['special_kw_num']
+    #     return
+
     def feature_process_v1(self):
         for name in self.data_type.keys():
             if self.data_type.get(name) == 'category':
@@ -194,7 +267,38 @@ class BaseInfo:
         self.drop_columns(self.useless_columns)
         return self.data
 
+    def get_organization_info(self):
+        names = {
+            'reccap': 'int64',
+            'enttypeminu': 'category',
+            'venind': 'category',
+            'enttypeitem': 'category',
+            'empnum': 'int64',
+            'regcap': 'int64',
+            'oploc': 'category',
+            'regtype': 'category',
+            'townsign': 'category',
+            'adbusign': 'category',
+            'jobid': 'category',
+            'orgid': 'category',
+            'state': 'category',
+            'enttype': 'category',
+            'opform': 'category'
+        }
+
+        for k, v in names.items():
+            if v == 'int64':
+                trans_data = self.data[['oplocdistrict', 'industryphy', 'industryco', 'enttypegb', k]].groupby(['oplocdistrict', 'industryphy', 'industryco', 'enttypegb']).max().reset_index()
+                trans_data.columns = ['oplocdistrict', 'industryphy', 'industryco', 'enttypegb', 'max_' + k]
+            elif v == 'category':
+                trans_data = self.data[['oplocdistrict', 'industryphy', 'industryco', 'enttypegb', k]].groupby(['oplocdistrict', 'industryphy', 'industryco', 'enttypegb']).agg({k: pd.Series.nunique}).reset_index()
+                trans_data.columns = ['oplocdistrict', 'industryphy', 'industryco', 'enttypegb', 'diff_' + k]
+            self.data = self.data.merge(trans_data, on=['oplocdistrict', 'industryphy', 'industryco', 'enttypegb'], how='inner')
+        return
+
     def feature_process_v2(self):
+        # self.op_scope()
+        # self.data['address_index'] = self.data['dom'].apply(lambda x:x[0:16])
         for name in self.data_type.keys():
             if self.data_type.get(name) == 'category':
                 self.fill_nan(name, '-1', 'str')
@@ -209,7 +313,13 @@ class BaseInfo:
 
         self.data['diff_year'] = (self.data['opto'] - self.data['opfrom']).astype('int64')
         self.drop_columns(self.useless_columns)
+        self.get_organization_info()
         return self.data
+
+
+
+
+
 
 
 
